@@ -1,0 +1,43 @@
+pipeline {
+  agent any
+  stages {
+    stage('Git Checkout') {
+      steps {
+        echo 'Git repo checkout operation.'
+        input(message: 'Git Checkout Operation', id: 'Git Operation', ok: 'Ok, Lets do it!', submitter: 'Mr. Roy', submitterParameter: 'Yes')
+      }
+    }
+
+    stage('Build') {
+      when {
+        branch 'master'
+      }
+      steps {
+        echo 'Started Clean and Build Process.'
+        bat 'mvn clean install -DskipTests'
+      }
+    }
+
+    stage('Test') {
+      post {
+        always {
+          archiveArtifacts(artifacts: 'target/*.jar', fingerprint: true)
+        }
+
+        success {
+          stash(name: 'Buzz Java 7', includes: 'target/**')
+        }
+
+      }
+      steps {
+        echo 'Started test execution.'
+        bat 'mvn test -Dsurefire.suiteXmlFiles=testNg.xml'
+      }
+    }
+
+  }
+  environment {
+    maven = '${MVN_HOME}'
+    jdk = '${JAVA_HOME}'
+  }
+}
